@@ -159,6 +159,7 @@ func produceMessages(p Producer, events []*eventqueue.Event, eq *eventqueue.Queu
 			if result.TopicPartition.Error != nil {
 				logrus.Fatalf("Delivery failed %v", result.TopicPartition.Error)
 			}
+			logrus.Infof("Message produced: %v", message)
 		}
 		err = eq.MarkEventAsProcessed(event.ID)
 		if err != nil {
