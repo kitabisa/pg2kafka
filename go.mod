@@ -4,6 +4,7 @@ go 1.13
 
 require (
 	github.com/blendle/pg2kafka v0.0.0-20191209075433-72d8a086553b
+	github.com/buger/jsonparser v1.0.0
 	github.com/confluentinc/confluent-kafka-go v1.4.2
 	github.com/lib/pq v1.7.0
 	github.com/pkg/errors v0.9.1
