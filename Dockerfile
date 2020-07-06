@@ -10,8 +10,6 @@ RUN cd librdkafka-* && ./configure && make && make install
 FROM scratch
 LABEL maintainer="Jurre Stender <jurre@blendle.com>"
 COPY sql ./sql
-RUN ls ./bin
 COPY ./bin/pg2kafka /pg2kafka
-RUN ls /pg2kafka
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 CMD ["/pg2kafka"]
