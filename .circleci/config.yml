@@ -12,7 +12,7 @@ workflows:
           context: gke-stg
           filters:
             branches:
-              only: staging
+              only: master
 
       - container/build:
           context: gke-stg
@@ -20,7 +20,7 @@ workflows:
             - go/build
           filters:
             branches:
-              only: staging
+              only: master
 
       - container/migration:
           context: gke-stg
@@ -28,7 +28,7 @@ workflows:
             - container/build
           filters:
             branches:
-              only: staging
+              only: master
 
       - container/deploy:
           context: gke-stg
@@ -36,40 +36,7 @@ workflows:
             - container/migration
           filters:
             branches:
-              only: staging
-
-  uat:
-    jobs:
-      - go/build:
-          context: gke-uat
-          filters:
-            branches:
               only: master
-
-      - container/build:
-          context: gke-uat
-          requires:
-            - go/build
-          filters:
-            branches:
-              only: master
-
-      - container/migration:
-          context: gke-uat
-          requires:
-            - container/build
-          filters:
-            branches:
-              only: master
-
-      - container/deploy:
-          context: gke-uat
-          requires:
-            - container/migration
-          filters:
-            branches:
-              only: master
-
   production:
     jobs:
       - go/build:
