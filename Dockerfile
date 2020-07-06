@@ -8,7 +8,7 @@ RUN wget -qO- https://github.com/edenhill/librdkafka/archive/v0.11.4-RC1.tar.gz 
 RUN cd librdkafka-* && ./configure && make && make install
 RUN curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
 RUN dep ensure -vendor-only
-RUN go build -ldflags "-X main.version=$(git rev-parse --short @) -s -extldflags -static" -a -installsuffix cgo .
+RUN go build -tags musl -ldflags "-X main.version=$(git rev-parse --short @) -s -extldflags -static" -a -installsuffix cgo .
 
 FROM scratch
 LABEL maintainer="Jurre Stender <jurre@blendle.com>"
