@@ -4,45 +4,45 @@ app:
 worker:
   env:
     - name: DATABASE_URL
-        valueFrom:
-          configMapKeyRef:
-            name: pg2kafka-service-prod
-            key: DATABASE_URL
+      valueFrom:
+        configMapKeyRef:
+          name: pg2kafka-service-prod
+          key: DATABASE_URL
     - name: TOPIC_NAMESPACE
-        valueFrom:
-          configMapKeyRef:
-            name: pg2kafka-service-prod
-            key: TOPIC_NAMESPACE
+      valueFrom:
+        configMapKeyRef:
+          name: pg2kafka-service-prod
+          key: TOPIC_NAMESPACE
     - name: PERFORM_MIGRATIONS
-        valueFrom:
-          configMapKeyRef:
-            name: pg2kafka-service-prod
-            key: PERFORM_MIGRATIONS
+      valueFrom:
+        configMapKeyRef:
+          name: pg2kafka-service-prod
+          key: PERFORM_MIGRATIONS
     - name: DRY_RUN
-        valueFrom:
-          configMapKeyRef:
-            name: pg2kafka-service-prod
-            key: DRY_RUN
+      valueFrom:
+        configMapKeyRef:
+          name: pg2kafka-service-prod
+          key: DRY_RUN
     - name: KAFKA_BROKER
-        valueFrom:
-          configMapKeyRef:
-            name: pg2kafka-service-prod
-            key: KAFKA_BROKER
+      valueFrom:
+        configMapKeyRef:
+          name: pg2kafka-service-prod
+          key: KAFKA_BROKER
     - name: KAFKA_USERNAME
-        valueFrom:
-          configMapKeyRef:
-            name: pg2kafka-service-prod
-            key: KAFKA_USERNAME
+      valueFrom:
+        configMapKeyRef:
+          name: pg2kafka-service-prod
+          key: KAFKA_USERNAME
     - name: KAFKA_PASSWORD
-        valueFrom:
-          configMapKeyRef:
-            name: pg2kafka-service-prod
-            key: KAFKA_PASSWORD
+      valueFrom:
+        configMapKeyRef:
+          name: pg2kafka-service-prod
+          key: KAFKA_PASSWORD
     - name: HOSTNAME
-        valueFrom:
-          configMapKeyRef:
-            name: pg2kafka-service-prod
-            key: HOSTNAME
+      valueFrom:
+        configMapKeyRef:
+          name: pg2kafka-service-prod
+          key: HOSTNAME
   enabled: true
 
   liveness:
@@ -62,14 +62,6 @@ worker:
 
 migration:
   enabled: false
-
-  resources:
-    requests:
-      cpu: 100m
-      memory: 512Mi
-    limits:
-      cpu: 200m
-      memory: 1Gi
 
 ingress:
   enabled: false
