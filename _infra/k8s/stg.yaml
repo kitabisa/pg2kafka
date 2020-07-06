@@ -46,10 +46,7 @@ worker:
   enabled: true
 
   liveness:
-    enabled: true
-    command:
-      - rm
-      - /tmp/health_check
+    enabled: false
 
   resources:
     requests:
