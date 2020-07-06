@@ -5,42 +5,42 @@ worker:
   env:
     - name: DATABASE_URL
       valueFrom:
-        configMapKeyRef:
+        secretKeyRef:
           name: pg2kafka-service-stg
           key: DATABASE_URL
     - name: TOPIC_NAMESPACE
       valueFrom:
-        configMapKeyRef:
+        secretKeyRef:
           name: pg2kafka-service-stg
           key: TOPIC_NAMESPACE
     - name: PERFORM_MIGRATIONS
       valueFrom:
-        configMapKeyRef:
+        secretKeyRef:
           name: pg2kafka-service-stg
           key: PERFORM_MIGRATIONS
     - name: DRY_RUN
       valueFrom:
-        configMapKeyRef:
+        secretKeyRef:
           name: pg2kafka-service-stg
           key: DRY_RUN
     - name: KAFKA_BROKER
       valueFrom:
-        configMapKeyRef:
+        secretKeyRef:
           name: pg2kafka-service-stg
           key: KAFKA_BROKER
     - name: KAFKA_USERNAME
       valueFrom:
-        configMapKeyRef:
+        secretKeyRef:
           name: pg2kafka-service-stg
           key: KAFKA_USERNAME
     - name: KAFKA_PASSWORD
       valueFrom:
-        configMapKeyRef:
+        secretKeyRef:
           name: pg2kafka-service-stg
           key: KAFKA_PASSWORD
     - name: HOSTNAME
       valueFrom:
-        configMapKeyRef:
+        secretKeyRef:
           name: pg2kafka-service-stg
           key: HOSTNAME
   enabled: true
