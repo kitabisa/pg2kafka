@@ -1,4 +1,4 @@
-FROM kitabisa/debian-base-image:latest
+FROM scratch
 
 WORKDIR /opt/pg2kafka
 COPY ./bin/pg2kafka /opt/pg2kafka/

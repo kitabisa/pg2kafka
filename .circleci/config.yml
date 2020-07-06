@@ -21,15 +21,6 @@ workflows:
           filters:
             branches:
               only: master
-
-      - container/migration:
-          context: gke-stg
-          requires:
-            - container/build
-          filters:
-            branches:
-              only: master
-
       - container/deploy:
           context: gke-stg
           requires:
