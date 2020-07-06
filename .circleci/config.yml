@@ -49,7 +49,7 @@ workflows:
       - container/deploy:
           context: gke-prod
           requires:
-            - container/migration
+            - container/build
           filters:
             tags:
               only: /^v\d+.\d+.\d+.*/
