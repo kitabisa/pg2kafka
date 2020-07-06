@@ -6,7 +6,8 @@ ADD . ./
 RUN apk --update --no-cache add git alpine-sdk bash
 RUN wget -qO- https://github.com/edenhill/librdkafka/archive/v0.11.4-RC1.tar.gz | tar xz
 RUN cd librdkafka-* && ./configure && make && make install
-RUN apt install go-dep && dep ensure -vendor-only
+RUN curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+RUN dep ensure -vendor-only
 RUN go build -ldflags "-X main.version=$(git rev-parse --short @) -s -extldflags -static" -a -installsuffix cgo .
 
 FROM scratch

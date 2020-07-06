@@ -8,15 +8,8 @@ workflows:
   version: 2
   staging:
     jobs:
-      - go/build:
-          context: gke-stg
-          filters:
-            branches:
-              only: staging
       - container/build:
           context: gke-stg
-          requires:
-            - go/build
           filters:
             branches:
               only: staging
@@ -29,17 +22,8 @@ workflows:
               only: staging
   production:
     jobs:
-      - go/build:
-          filters:
-            tags:
-              only: /^v\d+.\d+.\d+.*/
-            branches:
-              ignore: /.*/
-
       - container/build:
-          context: gke-prod
-          requires:
-            - go/build
+          context: gke-prod          
           filters:
             tags:
               only: /^v\d+.\d+.\d+.*/
