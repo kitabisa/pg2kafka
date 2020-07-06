@@ -1,0 +1,110 @@
+version: 2.1
+
+orbs:
+  go: kitabisa/go@0.1
+  container: kitabisa/container@1.4
+
+workflows:
+  version: 2
+  staging:
+    jobs:
+      - go/build:
+          context: gke-stg
+          filters:
+            branches:
+              only: staging
+
+      - container/build:
+          context: gke-stg
+          requires:
+            - go/build
+          filters:
+            branches:
+              only: staging
+
+      - container/migration:
+          context: gke-stg
+          requires:
+            - container/build
+          filters:
+            branches:
+              only: staging
+
+      - container/deploy:
+          context: gke-stg
+          requires:
+            - container/migration
+          filters:
+            branches:
+              only: staging
+
+  uat:
+    jobs:
+      - go/build:
+          context: gke-uat
+          filters:
+            branches:
+              only: master
+
+      - container/build:
+          context: gke-uat
+          requires:
+            - go/build
+          filters:
+            branches:
+              only: master
+
+      - container/migration:
+          context: gke-uat
+          requires:
+            - container/build
+          filters:
+            branches:
+              only: master
+
+      - container/deploy:
+          context: gke-uat
+          requires:
+            - container/migration
+          filters:
+            branches:
+              only: master
+
+  production:
+    jobs:
+      - go/build:
+          filters:
+            tags:
+              only: /^v\d+.\d+.\d+.*/
+            branches:
+              ignore: /.*/
+
+      - container/build:
+          context: gke-prod
+          requires:
+            - go/build
+          filters:
+            tags:
+              only: /^v\d+.\d+.\d+.*/
+            branches:
+              ignore: /.*/
+
+      - container/migration:
+          context: gke-prod
+          requires:
+            - container/build
+          filters:
+            tags:
+              only: /^v\d+.\d+.\d+.*/
+            branches:
+              ignore: /.*/
+
+      - container/deploy:
+          context: gke-prod
+          requires:
+            - container/migration
+          filters:
+            tags:
+              only: /^v\d+.\d+.\d+.*/
+            branches:
+              ignore: /.*/
