@@ -13,7 +13,6 @@ workflows:
           filters:
             branches:
               only: master
-
       - container/build:
           context: gke-stg
           requires:
@@ -24,7 +23,7 @@ workflows:
       - container/deploy:
           context: gke-stg
           requires:
-            - container/migration
+            - container/build
           filters:
             branches:
               only: master
@@ -41,16 +40,6 @@ workflows:
           context: gke-prod
           requires:
             - go/build
-          filters:
-            tags:
-              only: /^v\d+.\d+.\d+.*/
-            branches:
-              ignore: /.*/
-
-      - container/migration:
-          context: gke-prod
-          requires:
-            - container/build
           filters:
             tags:
               only: /^v\d+.\d+.\d+.*/
