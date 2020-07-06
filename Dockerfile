@@ -1,15 +1,13 @@
-FROM golang:alpine as builder
+FROM kitabisa/debian-base-image:latest
 
-WORKDIR /go/src/github.com/blendle/pg2kafka
-ADD . ./
+WORKDIR /opt/pg2kafka
+COPY ./bin/pg2kafka /opt/pg2kafka/
+RUN chmod +x /opt/dhuwit/dhuwit
 
 RUN apk --update --no-cache add git alpine-sdk bash
 RUN wget -qO- https://github.com/edenhill/librdkafka/archive/v0.11.4-RC1.tar.gz | tar xz
 RUN cd librdkafka-* && ./configure && make && make install
 
-FROM scratch
-LABEL maintainer="Jurre Stender <jurre@blendle.com>"
 COPY sql ./sql
-COPY --from=builder /go/src/github.com/kitabisa/pg2kafka/pg2kafka /
-COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
-ENTRYPOINT ["/pg2kafka"]
+
+ENTRYPOINT ["/opt/dhuwit/dhuwit"]
