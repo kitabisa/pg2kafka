@@ -10,6 +10,6 @@ RUN cd librdkafka-* && ./configure && make && make install
 FROM scratch
 LABEL maintainer="Jurre Stender <jurre@blendle.com>"
 COPY sql ./sql
-COPY --from=builder /go/src/github.com/blendle/pg2kafka/pg2kafka /
+COPY --from=builder /go/src/github.com/kitabisa/pg2kafka/pg2kafka /
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 ENTRYPOINT ["/pg2kafka"]
