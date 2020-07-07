@@ -50,7 +50,7 @@ helm:
 	@echo "Deploying ${APP_NAME}-urunan ${VERSION}"
 	helm upgrade ${APP_NAME}-urunan kitabisa/app --install \
 		--version 0.12.0-alpha.10 \
-		--namespace ${APP_NAME} \
+		--namespace urunan \
 		--values _infra/k8s/urunan/${ENVIRONMENT}.yaml \
 		--set meta.env=${ENVIRONMENT},meta.squad=${SQUAD},meta.version=${VERSION},image.repository=${REGISTRY_URL}/${APP_NAME},image.tag=${VERSION}
 
