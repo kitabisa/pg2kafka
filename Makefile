@@ -47,11 +47,11 @@ push: tag
 	docker push ${REGISTRY_URL}/${APP_NAME}:latest
 
 helm:
-	@echo "Deploying ${APP_NAME} ${VERSION}"
-	helm upgrade ${APP_NAME} kitabisa/app --install \
+	@echo "Deploying ${APP_NAME}-urunan ${VERSION}"
+	helm upgrade ${APP_NAME}-urunan kitabisa/app --install \
 		--version 0.12.0-alpha.10 \
 		--namespace ${APP_NAME} \
-		--values _infra/k8s/${ENVIRONMENT}.yaml \
+		--values _infra/k8s/urunan/${ENVIRONMENT}.yaml \
 		--set meta.env=${ENVIRONMENT},meta.squad=${SQUAD},meta.version=${VERSION},image.repository=${REGISTRY_URL}/${APP_NAME},image.tag=${VERSION}
 
 helm-migration:
