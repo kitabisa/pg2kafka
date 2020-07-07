@@ -11,27 +11,27 @@ worker:
     - name: PERFORM_MIGRATIONS
       valueFrom:
         secretKeyRef:
-          name: pg2kafka-service-prod
+          name: urunan-service-prod
           key: PERFORM_MIGRATIONS
     - name: DRY_RUN
       valueFrom:
         secretKeyRef:
-          name: pg2kafka-service-prod
+          name: urunan-service-prod
           key: DRY_RUN
     - name: KAFKA_BROKER
       valueFrom:
         secretKeyRef:
-          name: pg2kafka-service-prod
+          name: urunan-service-prod
           key: KAFKA_BROKER
     - name: KAFKA_USERNAME
       valueFrom:
         secretKeyRef:
-          name: pg2kafka-service-prod
+          name: urunan-service-prod
           key: KAFKA_USERNAME
     - name: KAFKA_PASSWORD
       valueFrom:
         secretKeyRef:
-          name: pg2kafka-service-prod
+          name: urunan-service-prod
           key: KAFKA_PASSWORD
     - name: HOSTNAME
       valueFrom:
