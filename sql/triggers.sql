@@ -112,7 +112,7 @@ BEGIN
 END
 $_$;
 
-CREATE OR REPLACE FUNCTION pg2kafka.setupdu(table_name_ref regclass, external_id_name text) RETURNS void
+CREATE OR REPLACE FUNCTION pg2kafka.setupsu(table_name_ref regclass, external_id_name text) RETURNS void
 LANGUAGE plpgsql
 AS $_$
 DECLARE
@@ -137,7 +137,7 @@ BEGIN
   trigger_name := table_name_ref || '_enqueue_event';
   lock_query := 'LOCK TABLE ' || table_name_ref || ' IN ACCESS EXCLUSIVE MODE';
   trigger_query := 'CREATE TRIGGER ' || trigger_name
-    || ' DElETE OR UPDATE ON ' || table_name_ref
+    || ' AFTER DElETE OR UPDATE ON ' || table_name_ref
     || ' FOR EACH ROW EXECUTE PROCEDURE pg2kafka.enqueue_event()';
 
   -- We aqcuire an exlusive lock on the table to ensure that we do not miss any
