@@ -111,3 +111,41 @@ BEGIN
   EXECUTE trigger_query;
 END
 $_$;
+
+CREATE OR REPLACE FUNCTION pg2kafka.setupdu(table_name_ref regclass, external_id_name text) RETURNS void
+LANGUAGE plpgsql
+AS $_$
+DECLARE
+  existing_id varchar;
+  trigger_name varchar;
+  lock_query varchar;
+  trigger_query varchar;
+BEGIN
+  SELECT pg2kafka.external_id_relations.external_id INTO existing_id
+  FROM pg2kafka.external_id_relations
+  WHERE pg2kafka.external_id_relations.table_name = table_name_ref::varchar;
+
+  IF existing_id != '' THEN
+    RAISE WARNING 'table/external_id relation already exists for %/%. Skipping setup.', table_name_ref, external_id_name;
+
+    RETURN;
+  END IF;
+
+  INSERT INTO pg2kafka.external_id_relations(external_id, table_name)
+  VALUES (external_id_name, table_name_ref);
+
+  trigger_name := table_name_ref || '_enqueue_event';
+  lock_query := 'LOCK TABLE ' || table_name_ref || ' IN ACCESS EXCLUSIVE MODE';
+  trigger_query := 'CREATE TRIGGER ' || trigger_name
+    || ' DElETE OR UPDATE ON ' || table_name_ref
+    || ' FOR EACH ROW EXECUTE PROCEDURE pg2kafka.enqueue_event()';
+
+  -- We aqcuire an exlusive lock on the table to ensure that we do not miss any
+  -- events between snapshotting and once the trigger is added.
+  EXECUTE lock_query;
+
+  PERFORM pg2kafka.create_snapshot_events(table_name_ref);
+
+  EXECUTE trigger_query;
+END
+$_$;
