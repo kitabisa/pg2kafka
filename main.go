@@ -147,7 +147,7 @@ func produceMessages(p Producer, events []*eventqueue.Event, eq *eventqueue.Queu
 			Timestamp: event.CreatedAt,
 		}
 		if os.Getenv("DRY_RUN") != "" {
-			logrus.Infof("Would produce message %v", message)
+			logrus.Infof("%v", msg)
 		} else {
 			err = p.Produce(message, deliveryChan)
 			if err != nil {
