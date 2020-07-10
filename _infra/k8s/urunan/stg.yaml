@@ -9,10 +9,7 @@ worker:
           name: urunan-service-stg
           key: DATABASE_URL
     - name: PERFORM_MIGRATIONS
-      valueFrom:
-        secretKeyRef:
-          name: urunan-service-stg
-          key: PERFORM_MIGRATIONS
+      value: true
     - name: DRY_RUN
       valueFrom:
         secretKeyRef:

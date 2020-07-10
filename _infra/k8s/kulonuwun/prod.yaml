@@ -9,10 +9,7 @@ worker:
           name: kulonuwun-service-prod
           key: DATABASE_URL
     - name: PERFORM_MIGRATIONS
-      valueFrom:
-        secretKeyRef:
-          name: kulonuwun-service-prod
-          key: PERFORM_MIGRATIONS
+      value: true
     - name: DRY_RUN
       valueFrom:
         secretKeyRef:
