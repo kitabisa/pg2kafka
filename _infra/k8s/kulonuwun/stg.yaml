@@ -6,42 +6,37 @@ worker:
     - name: DATABASE_URL
       valueFrom:
         secretKeyRef:
-          name: pg2kafka-service-stg
+          name: kulonuwun-service-stg
           key: DATABASE_URL
-    - name: TOPIC_NAMESPACE
-      valueFrom:
-        secretKeyRef:
-          name: pg2kafka-service-stg
-          key: TOPIC_NAMESPACE
     - name: PERFORM_MIGRATIONS
       valueFrom:
         secretKeyRef:
-          name: pg2kafka-service-stg
+          name: kulonuwun-service-stg
           key: PERFORM_MIGRATIONS
     - name: DRY_RUN
       valueFrom:
         secretKeyRef:
-          name: pg2kafka-service-stg
+          name: kulonuwun-service-stg
           key: DRY_RUN
     - name: KAFKA_BROKER
       valueFrom:
         secretKeyRef:
-          name: pg2kafka-service-stg
+          name: kulonuwun-service-stg
           key: KAFKA_BROKER
     - name: KAFKA_USERNAME
       valueFrom:
         secretKeyRef:
-          name: pg2kafka-service-stg
+          name: kulonuwun-service-stg
           key: KAFKA_USERNAME
     - name: KAFKA_PASSWORD
       valueFrom:
         secretKeyRef:
-          name: pg2kafka-service-stg
+          name: kulonuwun-service-stg
           key: KAFKA_PASSWORD
     - name: HOSTNAME
       valueFrom:
         secretKeyRef:
-          name: pg2kafka-service-stg
+          name: kulonuwun-service-stg
           key: HOSTNAME
   enabled: true
 

@@ -1,0 +1,65 @@
+app:
+  enabled: false
+
+worker:
+  env:
+    - name: DATABASE_URL
+      valueFrom:
+        secretKeyRef:
+          name: urunan-service-prod
+          key: DATABASE_URL
+    - name: PERFORM_MIGRATIONS
+      valueFrom:
+        secretKeyRef:
+          name: urunan-service-prod
+          key: PERFORM_MIGRATIONS
+    - name: DRY_RUN
+      valueFrom:
+        secretKeyRef:
+          name: urunan-service-prod
+          key: DRY_RUN
+    - name: KAFKA_BROKER
+      valueFrom:
+        secretKeyRef:
+          name: urunan-service-prod
+          key: KAFKA_BROKER
+    - name: KAFKA_USERNAME
+      valueFrom:
+        secretKeyRef:
+          name: urunan-service-prod
+          key: KAFKA_USERNAME
+    - name: KAFKA_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: urunan-service-prod
+          key: KAFKA_PASSWORD
+    - name: HOSTNAME
+      valueFrom:
+        secretKeyRef:
+          name: urunan-service-prod
+          key: HOSTNAME
+  enabled: true
+
+  liveness:
+    enabled: false
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 512Mi
+    limits:
+      cpu: 200m
+      memory: 1Gi
+
+
+migration:
+  enabled: false
+
+ingress:
+  enabled: false
+
+virtualService:
+  enabled: false
+
+users:
+  - lukluk
