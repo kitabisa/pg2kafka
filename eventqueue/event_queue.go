@@ -13,7 +13,7 @@ import (
 
 const (
 	selectUnprocessedEventsQuery = `
-		SELECT id, uuid, external_id, table_name, statement, data, created_at
+		SELECT id, uuid, external_id, table_name, statement, data, previous_data, created_at
 		FROM pg2kafka.outbound_event_queue
 		WHERE processed = false
 		ORDER BY id ASC
@@ -39,14 +39,15 @@ type ByteString []byte
 
 // Event represents the queued event in the database
 type Event struct {
-	ID         int             `json:"-"`
-	UUID       string          `json:"uuid"`
-	ExternalID ByteString      `json:"external_id"`
-	TableName  string          `json:"-"`
-	Statement  string          `json:"statement"`
-	Data       json.RawMessage `json:"data"`
-	CreatedAt  time.Time       `json:"created_at"`
-	Processed  bool            `json:"-"`
+	ID           int             `json:"-"`
+	UUID         string          `json:"uuid"`
+	ExternalID   ByteString      `json:"external_id"`
+	TableName    string          `json:"-"`
+	Statement    string          `json:"statement"`
+	Data         json.RawMessage `json:"data"`
+	PreviousData json.RawMessage `json:"previous_data,omitempty"`
+	CreatedAt    time.Time       `json:"created_at"`
+	Processed    bool            `json:"-"`
 }
 
 // Queue represents the queue of snapshot/create/update/delete events stored in
@@ -80,6 +81,7 @@ func (eq *Queue) FetchUnprocessedRecords() ([]*Event, error) {
 
 	messages := []*Event{}
 	for rows.Next() {
+		previousData := &json.RawMessage{}
 		msg := &Event{}
 		err = rows.Scan(
 			&msg.ID,
@@ -88,10 +90,14 @@ func (eq *Queue) FetchUnprocessedRecords() ([]*Event, error) {
 			&msg.TableName,
 			&msg.Statement,
 			&msg.Data,
+			&previousData,
 			&msg.CreatedAt,
 		)
 		if err != nil {
 			return nil, err
+		}
+		if previousData != nil {
+			msg.PreviousData = *previousData
 		}
 		messages = append(messages, msg)
 	}
@@ -131,7 +137,7 @@ func (eq *Queue) Close() error {
 // an 'outbound_event_queue' table that is used to store events, and all the
 // triggers necessary to snapshot and start tracking changes for a given table.
 func (eq *Queue) ConfigureOutboundEventQueueAndTriggers(path string) error {
-	migration, err := ioutil.ReadFile(path + "/migrations.sql")
+	migration, err := ioutil.ReadFile(path + "/migrations.sql") // nolint: gosec
 	if err != nil {
 		return errors.Wrap(err, "error reading migration")
 	}
@@ -141,7 +147,7 @@ func (eq *Queue) ConfigureOutboundEventQueueAndTriggers(path string) error {
 		return errors.Wrap(err, "failed to create table")
 	}
 
-	functions, err := ioutil.ReadFile(path + "/triggers.sql")
+	functions, err := ioutil.ReadFile(path + "/triggers.sql") // nolint: gosec
 	if err != nil {
 		return errors.Wrap(err, "Error loading functions")
 	}
