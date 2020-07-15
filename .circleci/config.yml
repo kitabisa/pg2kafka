@@ -1,0 +1,57 @@
+version: 2.1
+
+orbs:
+  go: kitabisa/go@0.1
+  container: kitabisa/container@1.4
+
+workflows:
+  version: 2
+  staging:
+    jobs:
+      - go/build:
+          context: gke-stg
+          filters:
+            branches:
+              only: staging
+      - container/build:
+          context: gke-stg
+          requires:
+            - go/build
+          filters:
+            branches:
+              only: staging
+      - container/deploy:
+          context: gke-stg
+          requires:
+            - container/build
+          filters:
+            branches:
+              only: staging
+  production:
+    jobs:
+      - go/build:
+          filters:
+            tags:
+              only: /^v\d+.\d+.\d+.*/
+            branches:
+              ignore: /.*/
+
+      - container/build:
+          context: gke-prod
+          requires:
+            - go/build
+          filters:
+            tags:
+              only: /^v\d+.\d+.\d+.*/
+            branches:
+              ignore: /.*/
+
+      - container/deploy:
+          context: gke-prod
+          requires:
+            - container/build
+          filters:
+            tags:
+              only: /^v\d+.\d+.\d+.*/
+            branches:
+              ignore: /.*/
