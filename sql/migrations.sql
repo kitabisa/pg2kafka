@@ -14,6 +14,8 @@ CREATE TABLE IF NOT EXISTS pg2kafka.outbound_event_queue (
   processed     boolean DEFAULT false
 );
 
+ALTER TABLE pg2kafka.outbound_event_queue ADD COLUMN IF NOT EXISTS previous_data jsonb NULL;
+
 CREATE INDEX IF NOT EXISTS outbound_event_queue_id_index
 ON pg2kafka.outbound_event_queue (id);
 
