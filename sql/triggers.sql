@@ -23,6 +23,7 @@ BEGIN
     previous := NULL;
   ELSIF TG_OP = 'UPDATE' THEN
     changes := row_to_json(NEW);
+    previous := row_to_json(OLD);
     -- Remove object that didn't change
     FOR col IN SELECT * FROM jsonb_each(row_to_json(OLD)::jsonb) LOOP
       IF changes->col.key = col.value THEN
