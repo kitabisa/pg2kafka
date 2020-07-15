@@ -16,7 +16,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var ( // nolint: gochecknoglobals
+var (
 	topicNamespace string
 	version        string
 )
@@ -33,7 +33,6 @@ type Producer interface {
 func main() {
 
 	conninfo := os.Getenv("DATABASE_URL")
-	fmt.Println(conninfo)
 	topicNamespace = parseTopicNamespace(os.Getenv("TOPIC_NAMESPACE"), parseDatabaseName(conninfo))
 
 	eq, err := eventqueue.New(conninfo)
