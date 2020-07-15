@@ -4,7 +4,6 @@ AS $_$
 DECLARE
   external_id varchar;
   changes jsonb;
-  previous jsonb;
   col record;
   outbound_event record;
 BEGIN
@@ -20,20 +19,16 @@ BEGIN
 
   IF TG_OP = 'INSERT' THEN
     changes := row_to_json(NEW);
-    previous := NULL;
   ELSIF TG_OP = 'UPDATE' THEN
     changes := row_to_json(NEW);
-    previous := row_to_json(OLD);
     -- Remove object that didn't change
     FOR col IN SELECT * FROM jsonb_each(row_to_json(OLD)::jsonb) LOOP
       IF changes->col.key = col.value THEN
         changes = changes - col.key;
-        previous = previous - col.key;
       END IF;
     END LOOP;
   ELSIF TG_OP = 'DELETE' THEN
     changes := '{}'::jsonb;
-    previous := row_to_json(OLD);
   END IF;
 
   -- Don't enqueue an event for updates that did not change anything
@@ -41,8 +36,8 @@ BEGIN
     RETURN NULL;
   END IF;
 
-  INSERT INTO pg2kafka.outbound_event_queue(external_id, table_name, statement, data, previous_data)
-  VALUES (external_id, TG_TABLE_NAME, TG_OP, changes, previous)
+  INSERT INTO pg2kafka.outbound_event_queue(external_id, table_name, statement, data)
+  VALUES (external_id, TG_TABLE_NAME, TG_OP, changes)
   RETURNING * INTO outbound_event;
 
   PERFORM pg_notify('outbound_event_queue', TG_OP);
@@ -58,7 +53,6 @@ DECLARE
   query text;
   rec record;
   changes jsonb;
-  previous jsonb;
   external_id_ref varchar;
   external_id varchar;
 BEGIN
@@ -70,11 +64,10 @@ BEGIN
 
   FOR rec IN EXECUTE query LOOP
     changes := row_to_json(rec);
-    previous := NULL;
     external_id := changes->>external_id_ref;
 
-    INSERT INTO pg2kafka.outbound_event_queue(external_id, table_name, statement, data, previous_data)
-    VALUES (external_id, table_name_ref, 'SNAPSHOT', changes, previous);
+    INSERT INTO pg2kafka.outbound_event_queue(external_id, table_name, statement, data)
+    VALUES (external_id, table_name_ref, 'SNAPSHOT', changes);
   END LOOP;
 
   PERFORM pg_notify('outbound_event_queue', 'SNAPSHOT');
