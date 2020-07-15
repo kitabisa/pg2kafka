@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/blendle/pg2kafka/eventqueue"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
+	"github.com/kitabisa/pg2kafka/eventqueue"
 	"github.com/lib/pq"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -149,8 +149,9 @@ func produceMessages(p Producer, events []*eventqueue.Event, eq *eventqueue.Queu
 		}
 		if os.Getenv("DRY_RUN") != "" {
 			logrus.Infof("id: %s, table: %s, statement: %s, data: %v", event.ExternalID, event.TableName,
-			event.Statement,
-			string(event.Data))
+				event.Statement,
+				string(event.Data),
+				string(event.PreviousData))
 		} else {
 			err = p.Produce(message, deliveryChan)
 			if err != nil {
