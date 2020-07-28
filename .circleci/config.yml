@@ -12,21 +12,21 @@ workflows:
           context: gke-stg
           filters:
             branches:
-              only: master
+              only: staging
       - container/build:
           context: gke-stg
           requires:
             - go/build
           filters:
             branches:
-              only: master
+              only: staging
       - container/deploy:
           context: gke-stg
           requires:
             - container/build
           filters:
             branches:
-              only: master
+              only: staging
   production:
     jobs:
       - go/build:

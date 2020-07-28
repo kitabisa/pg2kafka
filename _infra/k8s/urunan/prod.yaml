@@ -13,11 +13,6 @@ worker:
         secretKeyRef:
           name: urunan-service-prod
           key: PERFORM_MIGRATIONS
-    - name: DRY_RUN
-      valueFrom:
-        secretKeyRef:
-          name: urunan-service-prod
-          key: DRY_RUN
     - name: KAFKA_BROKER
       valueFrom:
         secretKeyRef:
@@ -63,3 +58,4 @@ virtualService:
 
 users:
   - lukluk
+  - abdul.azis
