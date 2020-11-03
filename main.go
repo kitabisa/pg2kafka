@@ -129,6 +129,7 @@ func waitForNotification(
 }
 
 func produceMessages(p Producer, events []*eventqueue.Event, eq *eventqueue.Queue) {
+	start := time.Now()
 	deliveryChan := make(chan kafka.Event)
 	for _, event := range events {
 		msg, err := json.Marshal(event)
@@ -164,11 +165,15 @@ func produceMessages(p Producer, events []*eventqueue.Event, eq *eventqueue.Queu
 			}
 			logrus.Infof("Message produced: %v", message)
 		}
-		err = eq.MarkEventAsProcessed(event.ID)
-		if err != nil {
-			logrus.Fatalf("Error marking record as processed %v", err)
-		}
+		go func() {
+			err := eq.MarkEventAsProcessed(event.ID)
+			if err != nil {
+				logrus.Fatalf("Error marking record as processed %v", err)
+			}
+		}()
 	}
+	elapsed := time.Since(start)
+	fmt.Printf("productMessage / 1000 took %s", elapsed)
 }
 
 func setupProducer() Producer {
