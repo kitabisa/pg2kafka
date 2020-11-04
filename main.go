@@ -164,10 +164,12 @@ func produceMessages(p Producer, events []*eventqueue.Event, eq *eventqueue.Queu
 			}
 			logrus.Infof("Message produced: %v", message)
 		}
-		err = eq.MarkEventAsProcessed(event.ID)
-		if err != nil {
-			logrus.Fatalf("Error marking record as processed %v", err)
-		}
+		go func() {
+			err := eq.MarkEventAsProcessed(event.ID)
+			if err != nil {
+				logrus.Infof("Error marking record as processed %v", err)
+			}
+		}()
 	}
 }
 
