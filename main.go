@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
@@ -38,7 +39,6 @@ func main() {
 	eq, err := eventqueue.New(conninfo)
 	if err != nil {
 		logrus.Fatalf("Error opening db connection %v", err)
-
 	}
 	defer func() {
 		if cerr := eq.Close(); cerr != nil {
@@ -85,8 +85,8 @@ func main() {
 
 // ProcessEvents queries the database for unprocessed events and produces them
 // to kafka.
-func ProcessEvents(p Producer, eq *eventqueue.Queue) {
-	events, err := eq.FetchUnprocessedRecords()
+func ProcessEvents(p Producer, eq *eventqueue.Queue, tableName string) {
+	events, err := eq.FetchUnprocessedRecords(tableName)
 	if err != nil {
 		logrus.Errorf("Error listening to pg %v", err)
 	}
@@ -95,14 +95,29 @@ func ProcessEvents(p Producer, eq *eventqueue.Queue) {
 }
 
 func processQueue(p Producer, eq *eventqueue.Queue) {
-	pageCount, err := eq.UnprocessedEventPagesCount()
+	var wg sync.WaitGroup
+
+	externalIdRelations, err := eq.FetchExternalIDRelations()
 	if err != nil {
-		logrus.Fatalf("Error selecting count %v", err)
+		logrus.Fatalf("Error get external id relations %v", err)
 	}
 
-	for i := 0; i <= pageCount; i++ {
-		ProcessEvents(p, eq)
+	for _, relation := range externalIdRelations {
+		wg.Add(1)
+		go func(r *eventqueue.ExternalIDRelation) {
+			pageCount, err := eq.UnprocessedEventPagesCount(r.TableName)
+			if err != nil {
+				logrus.Fatalf("Error selecting count %v", err)
+			}
+
+			for i := 0; i <= pageCount; i++ {
+				ProcessEvents(p, eq, r.TableName)
+			}
+			wg.Done()
+		}(relation)
 	}
+
+	wg.Wait()
 }
 
 func waitForNotification(
@@ -164,12 +179,12 @@ func produceMessages(p Producer, events []*eventqueue.Event, eq *eventqueue.Queu
 			}
 			logrus.Infof("Message produced: %v", message)
 		}
-		go func() {
-			err := eq.MarkEventAsProcessed(event.ID)
+		go func(e *eventqueue.Event) {
+			err := eq.MarkEventAsProcessed(e.ID)
 			if err != nil {
 				logrus.Infof("Error marking record as processed %v", err)
 			}
-		}()
+		}(event)
 	}
 }
 
