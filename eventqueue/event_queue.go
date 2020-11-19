@@ -12,10 +12,14 @@ import (
 )
 
 const (
+	selectExternalIDRelationsQuery = `
+		SELECT id, external_id, table_name FROM pg2kafka.external_id_relations
+	`
+
 	selectUnprocessedEventsQuery = `
 		SELECT id, uuid, external_id, table_name, statement, data, previous_data, created_at
 		FROM pg2kafka.outbound_event_queue
-		WHERE processed = false
+		WHERE processed = false AND table_name = $1
 		ORDER BY id ASC
 		LIMIT 1000
 	`
@@ -29,13 +33,19 @@ const (
 	countUnprocessedEventsQuery = `
 		SELECT count(*) AS count
 		FROM pg2kafka.outbound_event_queue
-		WHERE processed IS FALSE
+		WHERE processed IS FALSE AND table_name = $1
 	`
 )
 
 // ByteString is a special type of byte array with implemented interfaces to
 // convert from and to JSON and SQL values.
 type ByteString []byte
+
+type ExternalIDRelation struct {
+	ID int `json:"id"`
+	ExternalID string `json:"external_id"`
+	TableName string `json:"table_name"`
+}
 
 // Event represents the queued event in the database
 type Event struct {
@@ -73,8 +83,8 @@ func NewWithDB(db *sql.DB) *Queue {
 
 // FetchUnprocessedRecords fetches a page (up to 1000) of events that have not
 // been marked as processed yet.
-func (eq *Queue) FetchUnprocessedRecords() ([]*Event, error) {
-	rows, err := eq.db.Query(selectUnprocessedEventsQuery)
+func (eq *Queue) FetchUnprocessedRecords(tableName string) ([]*Event, error) {
+	rows, err := eq.db.Query(selectUnprocessedEventsQuery, tableName)
 	if err != nil {
 		return nil, err
 	}
@@ -108,12 +118,38 @@ func (eq *Queue) FetchUnprocessedRecords() ([]*Event, error) {
 	return messages, nil
 }
 
+func (eq *Queue) FetchExternalIDRelations() ([]*ExternalIDRelation, error) {
+	rows, err := eq.db.Query(selectExternalIDRelationsQuery)
+	if err != nil {
+		return nil, err
+	}
+
+	externalIDRelation := []*ExternalIDRelation{}
+	for rows.Next() {
+		eir := &ExternalIDRelation{}
+		err = rows.Scan(
+			&eir.ID,
+			&eir.ExternalID,
+			&eir.TableName,
+		)
+		if err != nil {
+			return nil, err
+		}
+		externalIDRelation = append(externalIDRelation, eir)
+	}
+
+	if cerr := rows.Close(); cerr != nil {
+		return nil, cerr
+	}
+	return externalIDRelation, nil
+}
+
 // UnprocessedEventPagesCount returns how many "pages" of events there are
 // queued in the database. Currently page-size is hard-coded to 1000 events per
 // page.
-func (eq *Queue) UnprocessedEventPagesCount() (int, error) {
+func (eq *Queue) UnprocessedEventPagesCount(tableName string) (int, error) {
 	count := 0
-	err := eq.db.QueryRow(countUnprocessedEventsQuery).Scan(&count)
+	err := eq.db.QueryRow(countUnprocessedEventsQuery, tableName).Scan(&count)
 	if err != nil {
 		return 0, err
 	}
