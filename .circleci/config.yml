@@ -6,6 +6,30 @@ orbs:
 
 workflows:
   version: 2
+  development:
+    jobs:
+      - go/build:
+          context: gke-dev
+          filters:
+            branches:
+              only: /^dev.*/
+
+      - container/build:
+          context: gke-dev
+          requires:
+            - go/build
+          filters:
+            branches:
+              only: /^dev.*/
+
+      - container/deploy:
+          context: gke-dev
+          requires:
+            - container/migration
+          filters:
+            branches:
+              only: /^dev.*/
+
   staging:
     jobs:
       - go/build:
