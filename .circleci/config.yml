@@ -25,7 +25,7 @@ workflows:
       - container/deploy:
           context: gke-dev
           requires:
-            - container/migration
+            - container/build
           filters:
             branches:
               only: /^dev.*/
