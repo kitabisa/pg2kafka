@@ -50,13 +50,19 @@ helm:
 	@echo "Deploying ${APP_NAME}-urunan ${VERSION}"
 	helm upgrade ${APP_NAME}-urunan kitabisa/app --install \
 		--version 0.12.0-alpha.10 \
-		--namespace urunan \
+		--namespace urunan --create-namespace \
 		--values _infra/k8s/urunan/${ENVIRONMENT}.yaml \
 		--set meta.env=${ENVIRONMENT},meta.squad=${SQUAD},meta.version=${VERSION},image.repository=${REGISTRY_URL}/${APP_NAME},image.tag=${VERSION}
 	@echo "Deploying ${APP_NAME}-kulonuwun ${VERSION}"
 	helm upgrade ${APP_NAME}-kulonuwun kitabisa/app --install \
 		--version 0.12.0-alpha.10 \
-		--namespace kulonuwun \
+		--namespace kulonuwun --create-namespace \
+		--values _infra/k8s/kulonuwun/${ENVIRONMENT}.yaml \
+		--set meta.env=${ENVIRONMENT},meta.squad=${SQUAD},meta.version=${VERSION},image.repository=${REGISTRY_URL}/${APP_NAME},image.tag=${VERSION}
+	@echo "Deploying ${APP_NAME}-jaga-hati ${VERSION}"
+	helm upgrade ${APP_NAME}-jaga-hati kitabisa/app --install \
+		--version 0.12.0-alpha.10 \
+		--namespace jaga-hati --create-namespace \
 		--values _infra/k8s/kulonuwun/${ENVIRONMENT}.yaml \
 		--set meta.env=${ENVIRONMENT},meta.squad=${SQUAD},meta.version=${VERSION},image.repository=${REGISTRY_URL}/${APP_NAME},image.tag=${VERSION}
 
@@ -64,7 +70,7 @@ helm-migration:
 	@echo "Migrating database ${APP_NAME} ${VERSION}"
 	helm upgrade ${APP_NAME}-migration kitabisa/migration --install --cleanup-on-fail \
 		--version 0.2.0-alpha.3 \
-		--namespace ${APP_NAME} \
+		--namespace ${APP_NAME} --create-namespace\
 		--values _infra/k8s/${ENVIRONMENT}.yaml \
 		--set meta.env=${ENVIRONMENT},meta.squad=${SQUAD},meta.version=${VERSION},image.repository=${REGISTRY_URL}/${APP_NAME},image.tag=${VERSION}
 
