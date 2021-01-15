@@ -59,10 +59,10 @@ helm:
 		--namespace kulonuwun --create-namespace \
 		--values _infra/k8s/kulonuwun/${ENVIRONMENT}.yaml \
 		--set meta.env=${ENVIRONMENT},meta.squad=${SQUAD},meta.version=${VERSION},image.repository=${REGISTRY_URL}/${APP_NAME},image.tag=${VERSION}
-	@echo "Deploying ${APP_NAME}-jaga-hati ${VERSION}"
-	helm upgrade ${APP_NAME}-jaga-hati kitabisa/app --install \
+	@echo "Deploying ${APP_NAME}-jaga-sekutu ${VERSION}"
+	helm upgrade ${APP_NAME}-jaga-sekutu kitabisa/app --install \
 		--version 0.12.0-alpha.10 \
-		--namespace jaga-hati --create-namespace \
+		--namespace jaga-sekutu --create-namespace \
 		--values _infra/k8s/kulonuwun/${ENVIRONMENT}.yaml \
 		--set meta.env=${ENVIRONMENT},meta.squad=${SQUAD},meta.version=${VERSION},image.repository=${REGISTRY_URL}/${APP_NAME},image.tag=${VERSION}
 
