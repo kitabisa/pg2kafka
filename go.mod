@@ -9,7 +9,7 @@ require (
 	github.com/blendle/pg2kafka v0.0.0-20191209075433-72d8a086553b
 	github.com/boltdb/bolt v1.3.1 // indirect
 	github.com/buger/jsonparser v1.0.0
-	github.com/confluentinc/confluent-kafka-go v1.4.2
+	github.com/confluentinc/confluent-kafka-go v1.5.2
 	github.com/golang/dep v0.5.4 // indirect
 	github.com/golang/protobuf v1.4.2 // indirect
 	github.com/jmank88/nuts v0.4.0 // indirect

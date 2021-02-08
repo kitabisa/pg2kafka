@@ -22,15 +22,6 @@ var ( // nolint: gosec
 	version        string
 )
 
-// Producer is the minimal required interface pg2kafka requires to produce
-// events to a kafka topic.
-type Producer interface {
-	Close()
-	Flush(int) int
-
-	Produce(*kafka.Message, chan kafka.Event) error
-}
-
 func main() {
 
 	conninfo := os.Getenv("DATABASE_URL")
@@ -85,7 +76,7 @@ func main() {
 
 // ProcessEvents queries the database for unprocessed events and produces them
 // to kafka.
-func ProcessEvents(p Producer, eq *eventqueue.Queue, tableName string) {
+func ProcessEvents(p *kafka.Producer, eq *eventqueue.Queue, tableName string) {
 	events, err := eq.FetchUnprocessedRecords(tableName)
 	if err != nil {
 		logrus.Errorf("Error listening to pg %v", err)
@@ -94,7 +85,7 @@ func ProcessEvents(p Producer, eq *eventqueue.Queue, tableName string) {
 	produceMessages(p, events, eq)
 }
 
-func processQueue(p Producer, eq *eventqueue.Queue) {
+func processQueue(p *kafka.Producer, eq *eventqueue.Queue) {
 	var wg sync.WaitGroup
 
 	externalIdRelations, err := eq.FetchExternalIDRelations()
@@ -122,7 +113,7 @@ func processQueue(p Producer, eq *eventqueue.Queue) {
 
 func waitForNotification(
 	l *pq.Listener,
-	p Producer,
+	p *kafka.Producer,
 	eq *eventqueue.Queue,
 	signals chan os.Signal,
 ) {
@@ -143,8 +134,7 @@ func waitForNotification(
 	}
 }
 
-func produceMessages(p Producer, events []*eventqueue.Event, eq *eventqueue.Queue) {
-	deliveryChan := make(chan kafka.Event)
+func produceMessages(p *kafka.Producer, events []*eventqueue.Event, eq *eventqueue.Queue) {
 	for _, event := range events {
 		msg, err := json.Marshal(event)
 		if err != nil {
@@ -167,17 +157,30 @@ func produceMessages(p Producer, events []*eventqueue.Event, eq *eventqueue.Queu
 				string(event.Data),
 				string(event.PreviousData))
 		} else {
-			err = p.Produce(message, deliveryChan)
-			if err != nil {
-				logrus.Fatalf("Failed to produce %v", err)
-			}
-			e := <-deliveryChan
+			doneChan := make(chan bool)
 
-			result := e.(*kafka.Message)
-			if result.TopicPartition.Error != nil {
-				logrus.Fatalf("Delivery failed %v", result.TopicPartition.Error)
-			}
-			logrus.Infof("Message produced: %v", message)
+			go func() {
+				defer close(doneChan)
+				for e := range p.Events() {
+					switch ev := e.(type) {
+					case *kafka.Message:
+						m := ev
+						if m.TopicPartition.Error != nil {
+							fmt.Printf("Delivery failed: %v\n", m.TopicPartition.Error)
+						} else {
+							fmt.Printf("Delivered message to topic %s [%d] at offset %v\n",
+								*m.TopicPartition.Topic, m.TopicPartition.Partition, m.TopicPartition.Offset)
+						}
+						return
+
+					default:
+						fmt.Printf("Ignored event: %s\n", ev)
+					}
+				}
+			}()
+			p.ProduceChannel() <- message
+			_ = <-doneChan
+
 		}
 		go func(e *eventqueue.Event) {
 			err := eq.MarkEventAsProcessed(e.ID)
@@ -188,7 +191,7 @@ func produceMessages(p Producer, events []*eventqueue.Event, eq *eventqueue.Queu
 	}
 }
 
-func setupProducer() Producer {
+func setupProducer() *kafka.Producer {
 	broker := os.Getenv("KAFKA_BROKER")
 	if broker == "" {
 		panic("missing KAFKA_BROKER environment")
