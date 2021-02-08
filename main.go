@@ -157,10 +157,7 @@ func produceMessages(p *kafka.Producer, events []*eventqueue.Event, eq *eventque
 				string(event.Data),
 				string(event.PreviousData))
 		} else {
-			doneChan := make(chan bool)
-
 			go func() {
-				defer close(doneChan)
 				for e := range p.Events() {
 					switch ev := e.(type) {
 					case *kafka.Message:
@@ -179,15 +176,12 @@ func produceMessages(p *kafka.Producer, events []*eventqueue.Event, eq *eventque
 				}
 			}()
 			p.ProduceChannel() <- message
-			_ = <-doneChan
 
 		}
-		go func(e *eventqueue.Event) {
-			err := eq.MarkEventAsProcessed(e.ID)
-			if err != nil {
-				logrus.Infof("Error marking record as processed %v", err)
-			}
-		}(event)
+		err = eq.MarkEventAsProcessed(event.ID)
+		if err != nil {
+			logrus.Infof("Error marking record as processed %v", err)
+		}
 	}
 }
 
