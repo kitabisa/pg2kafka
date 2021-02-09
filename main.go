@@ -82,7 +82,24 @@ func ProcessEvents(p *kafka.Producer, eq *eventqueue.Queue, tableName string) {
 		logrus.Errorf("Error listening to pg %v", err)
 	}
 
-	produceMessages(p, events, eq)
+	var wg sync.WaitGroup
+	wg.Add(len(events))
+	eventIDsChan := make(chan int, len(events))
+
+	produceMessages(p, events, eventIDsChan, func() { wg.Done() })
+
+	go func() {
+		defer close(eventIDsChan)
+		wg.Wait()
+	}()
+
+	if len(events) > 0 {
+		statements, eventIDs := prepareEventIDStatements(eventIDsChan)
+		err = eq.MarkEventAsProcessed(statements, eventIDs)
+		if err != nil {
+			logrus.Infof("Error marking record as processed %v", err)
+		}
+	}
 }
 
 func processQueue(p *kafka.Producer, eq *eventqueue.Queue) {
@@ -134,7 +151,7 @@ func waitForNotification(
 	}
 }
 
-func produceMessages(p *kafka.Producer, events []*eventqueue.Event, eq *eventqueue.Queue) {
+func produceMessages(p *kafka.Producer, events []*eventqueue.Event, eventIDsChan chan int, onDone func()) {
 	for _, event := range events {
 		msg, err := json.Marshal(event)
 		if err != nil {
@@ -152,21 +169,28 @@ func produceMessages(p *kafka.Producer, events []*eventqueue.Event, eq *eventque
 			Timestamp: event.CreatedAt,
 		}
 		if os.Getenv("DRY_RUN") != "" {
-			logrus.Infof("id: %s, table: %s, statement: %s, data: %v", event.ExternalID, event.TableName,
-				event.Statement,
-				string(event.Data),
-				string(event.PreviousData))
+			go func() {
+				defer onDone()
+				logrus.Infof("id: %s, table: %s, statement: %s, data: %v", event.ExternalID, event.TableName,
+					event.Statement,
+					string(event.Data),
+					string(event.PreviousData))
+				eventIDsChan <- event.ID
+			}()
 		} else {
 			go func() {
+				defer onDone()
 				for e := range p.Events() {
 					switch ev := e.(type) {
 					case *kafka.Message:
 						m := ev
 						if m.TopicPartition.Error != nil {
 							fmt.Printf("Delivery failed: %v\n", m.TopicPartition.Error)
+							eventIDsChan <- -1
 						} else {
 							fmt.Printf("Delivered message to topic %s [%d] at offset %v\n",
 								*m.TopicPartition.Topic, m.TopicPartition.Partition, m.TopicPartition.Offset)
+							eventIDsChan <- event.ID
 						}
 						return
 
@@ -178,11 +202,8 @@ func produceMessages(p *kafka.Producer, events []*eventqueue.Event, eq *eventque
 			p.ProduceChannel() <- message
 
 		}
-		err = eq.MarkEventAsProcessed(event.ID)
-		if err != nil {
-			logrus.Infof("Error marking record as processed %v", err)
-		}
 	}
+	return
 }
 
 func setupProducer() *kafka.Producer {
@@ -242,4 +263,17 @@ func parseTopicNamespace(topicNamespace string, databaseName string) string {
 	}
 
 	return s
+}
+
+func prepareEventIDStatements(eventIDsChan chan int) (statements string, eventIDs []interface{}) {
+	i := 1
+	for c := range eventIDsChan {
+		if c != -1 {
+			statements += fmt.Sprintf("$%d,", i)
+			eventIDs = append(eventIDs, c)
+			i++
+		}
+	}
+	statements = statements[:len(statements)-1] // remove the trailing comma
+	return
 }

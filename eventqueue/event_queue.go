@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"math"
 	"time"
@@ -27,7 +28,7 @@ const (
 	markEventAsProcessedQuery = `
 		UPDATE pg2kafka.outbound_event_queue
 		SET processed = true
-		WHERE id = $1 AND processed = false
+		WHERE id in (%s) AND processed = false
 	`
 
 	countUnprocessedEventsQuery = `
@@ -159,9 +160,10 @@ func (eq *Queue) UnprocessedEventPagesCount(tableName string) (int, error) {
 }
 
 // MarkEventAsProcessed marks an even as processed.
-func (eq *Queue) MarkEventAsProcessed(eventID int) error {
-	_, err := eq.db.Exec(markEventAsProcessedQuery, eventID)
-	return err
+func (eq *Queue) MarkEventAsProcessed(statements string, eventIDs []interface{}) (err error) {
+	query := fmt.Sprintf(markEventAsProcessedQuery, statements)
+	_, err = eq.db.Exec(query, eventIDs...)
+	return
 }
 
 // Close closes the Queue's database connection.
@@ -233,3 +235,4 @@ func (b *ByteString) Scan(val interface{}) error {
 
 	return nil
 }
+
