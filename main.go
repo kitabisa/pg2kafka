@@ -22,15 +22,6 @@ var ( // nolint: gosec
 	version        string
 )
 
-// Producer is the minimal required interface pg2kafka requires to produce
-// events to a kafka topic.
-type Producer interface {
-	Close()
-	Flush(int) int
-
-	Produce(*kafka.Message, chan kafka.Event) error
-}
-
 func main() {
 
 	conninfo := os.Getenv("DATABASE_URL")
@@ -85,16 +76,33 @@ func main() {
 
 // ProcessEvents queries the database for unprocessed events and produces them
 // to kafka.
-func ProcessEvents(p Producer, eq *eventqueue.Queue, tableName string) {
+func ProcessEvents(p *kafka.Producer, eq *eventqueue.Queue, tableName string) {
 	events, err := eq.FetchUnprocessedRecords(tableName)
 	if err != nil {
 		logrus.Errorf("Error listening to pg %v", err)
 	}
 
-	produceMessages(p, events, eq)
+	var wg sync.WaitGroup
+	wg.Add(len(events))
+	eventIDsChan := make(chan int, len(events))
+
+	produceMessages(p, events, eventIDsChan, func() { wg.Done() })
+
+	go func() {
+		defer close(eventIDsChan)
+		wg.Wait()
+	}()
+
+	if len(events) > 0 {
+		statements, eventIDs := prepareEventIDStatements(eventIDsChan)
+		err = eq.MarkEventAsProcessed(statements, eventIDs)
+		if err != nil {
+			logrus.Infof("Error marking record as processed %v", err)
+		}
+	}
 }
 
-func processQueue(p Producer, eq *eventqueue.Queue) {
+func processQueue(p *kafka.Producer, eq *eventqueue.Queue) {
 	var wg sync.WaitGroup
 
 	externalIdRelations, err := eq.FetchExternalIDRelations()
@@ -122,7 +130,7 @@ func processQueue(p Producer, eq *eventqueue.Queue) {
 
 func waitForNotification(
 	l *pq.Listener,
-	p Producer,
+	p *kafka.Producer,
 	eq *eventqueue.Queue,
 	signals chan os.Signal,
 ) {
@@ -143,8 +151,7 @@ func waitForNotification(
 	}
 }
 
-func produceMessages(p Producer, events []*eventqueue.Event, eq *eventqueue.Queue) {
-	deliveryChan := make(chan kafka.Event)
+func produceMessages(p *kafka.Producer, events []*eventqueue.Event, eventIDsChan chan int, onDone func()) {
 	for _, event := range events {
 		msg, err := json.Marshal(event)
 		if err != nil {
@@ -162,33 +169,44 @@ func produceMessages(p Producer, events []*eventqueue.Event, eq *eventqueue.Queu
 			Timestamp: event.CreatedAt,
 		}
 		if os.Getenv("DRY_RUN") != "" {
-			logrus.Infof("id: %s, table: %s, statement: %s, data: %v", event.ExternalID, event.TableName,
-				event.Statement,
-				string(event.Data),
-				string(event.PreviousData))
+			go func() {
+				defer onDone()
+				logrus.Infof("id: %s, table: %s, statement: %s, data: %v", event.ExternalID, event.TableName,
+					event.Statement,
+					string(event.Data),
+					string(event.PreviousData))
+				eventIDsChan <- event.ID
+			}()
 		} else {
-			err = p.Produce(message, deliveryChan)
-			if err != nil {
-				logrus.Fatalf("Failed to produce %v", err)
-			}
-			e := <-deliveryChan
+			go func() {
+				defer onDone()
+				for e := range p.Events() {
+					switch ev := e.(type) {
+					case *kafka.Message:
+						m := ev
+						if m.TopicPartition.Error != nil {
+							fmt.Printf("Delivery failed: %v\n", m.TopicPartition.Error)
+							eventIDsChan <- -1
+						} else {
+							fmt.Printf("Delivered message to topic %s [%d] at offset %v\n",
+								*m.TopicPartition.Topic, m.TopicPartition.Partition, m.TopicPartition.Offset)
+							eventIDsChan <- event.ID
+						}
+						return
 
-			result := e.(*kafka.Message)
-			if result.TopicPartition.Error != nil {
-				logrus.Fatalf("Delivery failed %v", result.TopicPartition.Error)
-			}
-			logrus.Infof("Message produced: %v", message)
+					default:
+						fmt.Printf("Ignored event: %s\n", ev)
+					}
+				}
+			}()
+			p.ProduceChannel() <- message
+
 		}
-		go func(e *eventqueue.Event) {
-			err := eq.MarkEventAsProcessed(e.ID)
-			if err != nil {
-				logrus.Infof("Error marking record as processed %v", err)
-			}
-		}(event)
 	}
+	return
 }
 
-func setupProducer() Producer {
+func setupProducer() *kafka.Producer {
 	broker := os.Getenv("KAFKA_BROKER")
 	if broker == "" {
 		panic("missing KAFKA_BROKER environment")
@@ -245,4 +263,17 @@ func parseTopicNamespace(topicNamespace string, databaseName string) string {
 	}
 
 	return s
+}
+
+func prepareEventIDStatements(eventIDsChan chan int) (statements string, eventIDs []interface{}) {
+	i := 1
+	for c := range eventIDsChan {
+		if c != -1 {
+			statements += fmt.Sprintf("$%d,", i)
+			eventIDs = append(eventIDs, c)
+			i++
+		}
+	}
+	statements = statements[:len(statements)-1] // remove the trailing comma
+	return
 }
