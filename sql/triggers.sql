@@ -27,7 +27,6 @@ BEGIN
     -- Remove object that didn't change
     FOR col IN SELECT * FROM jsonb_each(row_to_json(OLD)::jsonb) LOOP
       IF changes->col.key = col.value THEN
-        changes = changes - col.key;
         previous = previous - col.key;
       END IF;
     END LOOP;
