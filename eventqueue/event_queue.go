@@ -155,6 +155,8 @@ func (eq *Queue) UnprocessedEventPagesCount(tableName string) (int, error) {
 		return 0, err
 	}
 
+	fmt.Printf("ini table: %s, count: %d\n", tableName, count)
+
 	limit := 1000
 	return int(math.Ceil(float64(count) / float64(limit))), nil
 }
