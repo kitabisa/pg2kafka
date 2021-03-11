@@ -20,7 +20,7 @@ const (
 	selectUnprocessedEventsQuery = `
 		SELECT id, uuid, external_id, table_name, statement, data, previous_data, created_at
 		FROM pg2kafka.outbound_event_queue
-		WHERE processed = false AND table_name = $1
+		WHERE processed = false AND table_name = $1 AND ID > $2
 		ORDER BY id ASC
 		LIMIT 1000
 	`
@@ -50,7 +50,7 @@ type ExternalIDRelation struct {
 
 // Event represents the queued event in the database
 type Event struct {
-	ID           int             `json:"-"`
+	ID           int             `json:"id"`
 	UUID         string          `json:"uuid"`
 	ExternalID   ByteString      `json:"external_id"`
 	TableName    string          `json:"-"`
@@ -84,8 +84,8 @@ func NewWithDB(db *sql.DB) *Queue {
 
 // FetchUnprocessedRecords fetches a page (up to 1000) of events that have not
 // been marked as processed yet.
-func (eq *Queue) FetchUnprocessedRecords(tableName string) ([]*Event, error) {
-	rows, err := eq.db.Query(selectUnprocessedEventsQuery, tableName)
+func (eq *Queue) FetchUnprocessedRecords(tableName string, lastID int) ([]*Event, error) {
+	rows, err := eq.db.Query(selectUnprocessedEventsQuery, tableName, lastID)
 	if err != nil {
 		return nil, err
 	}
