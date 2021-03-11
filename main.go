@@ -85,7 +85,6 @@ func markEventsAsProcessed(eq *eventqueue.Queue, eventIDs []interface{}) {
 	if err != nil {
 		logrus.Errorf("Error marking record as processed %v", err)
 	}
-
 }
 
 func producerCallback(eq *eventqueue.Queue, producer *kafka.Producer, signals chan os.Signal) {
