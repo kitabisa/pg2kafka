@@ -51,6 +51,29 @@ workflows:
           filters:
             branches:
               only: staging
+
+  uat:
+    jobs:
+      - go/build:
+          context: gke-uat
+          filters:
+            branches:
+              only: uat
+      - container/build:
+          context: gke-uat
+          requires:
+            - go/build
+          filters:
+            branches:
+              only: uat
+      - container/deploy:
+          context: gke-uat
+          requires:
+            - container/build
+          filters:
+            branches:
+              only: uat
+
   production:
     jobs:
       - go/build:

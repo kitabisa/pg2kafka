@@ -1,0 +1,61 @@
+app:
+  enabled: false
+
+worker:
+  env:
+    - name: DATABASE_URL
+      valueFrom:
+        secretKeyRef:
+          name: jaga-sekutu-service-uat
+          key: DATABASE_URL
+    - name: PERFORM_MIGRATIONS
+      valueFrom:
+        secretKeyRef:
+          name: jaga-sekutu-service-uat
+          key: PERFORM_MIGRATIONS
+    - name: KAFKA_BROKER
+      valueFrom:
+        secretKeyRef:
+          name: jaga-sekutu-service-uat
+          key: KAFKA_BROKER
+    - name: KAFKA_USERNAME
+      valueFrom:
+        secretKeyRef:
+          name: jaga-sekutu-service-uat
+          key: KAFKA_USERNAME
+    - name: KAFKA_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: jaga-sekutu-service-uat
+          key: KAFKA_PASSWORD
+    - name: HOSTNAME
+      valueFrom:
+        secretKeyRef:
+          name: jaga-sekutu-service-uat
+          key: HOSTNAME
+  enabled: true
+
+  liveness:
+    enabled: false
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 512Mi
+    limits:
+      cpu: 200m
+      memory: 1Gi
+
+
+migration:
+  enabled: false
+
+ingress:
+  enabled: false
+
+virtualService:
+  enabled: false
+
+users:
+  - lukluk
+  - abdul.azis
